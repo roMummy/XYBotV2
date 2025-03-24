@@ -9,6 +9,8 @@ from WechatAPI import WechatAPIClient
 from utils.decorators import *
 from utils.plugin_base import PluginBase
 
+from loguru import logger
+
 
 class GoodMorning(PluginBase):
     description = "早上好插件"
@@ -25,7 +27,7 @@ class GoodMorning(PluginBase):
 
         self.enable = config["enable"]
 
-    @schedule('cron', hour=8, minute=30)
+    @schedule('cron', hour=7, minute=30)
     async def daily_task(self, bot: WechatAPIClient):
         if not self.enable:
             return
@@ -45,19 +47,36 @@ class GoodMorning(PluginBase):
             if id.endswith("@chatroom"):
                 chatrooms.append(id)
 
-        async with aiohttp.request("GET", "https://zj.v.api.aa1.cn/api/bk/?num=1&type=json") as req:
+        async with aiohttp.request("GET", "https://zj.v.api.aa1.cn/api/bk/?num=1&type=json", ssl=False) as req:
             resp = await req.json()
             history_today = "N/A"
             if resp.get("content"):
-                history_today = str(resp.get("content")[0])
+                history_events = resp.get("content", [])
+                history_today = "\n".join([str(event) for event in history_events])
+
+        
+        async with aiohttp.request("GET", "https://v.api.aa1.cn/api/api-weather/qq-weather.php?msg=重庆", ssl=False) as req:
+            resp = await req.text()
+            weather_today = "N/A"
+            if resp:
+                # 清理脚本内容
+                clean_text = resp.split('城市：')
+                if len(clean_text) > 1:
+                    weather_today = '城市：' + clean_text[1].strip()
+                else:
+                    weather_today = "获取天气信息失败"
 
         weekend = ["一", "二", "三", "四", "五", "六", "日"]
-        message = ("----- XYBot -----\n"
+        message = ("----- 腾里云 -----\n"
                    f"[Sun]早上好！今天是 {datetime.now().strftime('%Y年%m月%d号')}，星期{weekend[datetime.now().weekday()]}。\n"
                    "\n"
                    "📖历史上的今天：\n"
-                   f"{history_today}")
+                   f"{history_today}\n"
+                   "\n"
+                   "🌈今日天气：\n"
+                   f"{weather_today}")
 
+        logger.info(f"message --> {message}")
         for chatroom in chatrooms:
             await bot.send_text_message(chatroom, message)
             await asyncio.sleep(randint(1, 5))
