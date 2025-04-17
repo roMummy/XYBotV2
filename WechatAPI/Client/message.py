@@ -97,7 +97,7 @@ class MessageMixin(WechatAPIClientBase):
             else:
                 self.error_handler(json_resp)
 
-    async def send_text_message(self, wxid: str, content: str, at: Union[list, str] = "") -> tuple[int, int, int]:
+    async def send_text_message(self, wxid: str, content: str, type: int = 1, at: Union[list, str] = "") -> tuple[int, int, int]:
         """发送文本消息。
 
         Args:
@@ -113,9 +113,9 @@ class MessageMixin(WechatAPIClientBase):
             BanProtection: 登录新设备后4小时内操作
             根据error_handler处理错误
         """
-        return await self._queue_message(self._send_text_message, wxid, content, at)
+        return await self._queue_message(self._send_text_message, wxid, content, type, at)
 
-    async def _send_text_message(self, wxid: str, content: str, at: list[str] = None) -> tuple[int, int, int]:
+    async def _send_text_message(self, wxid: str, content: str, type: int, at: list[str] = None) -> tuple[int, int, int]:
         """
         实际发送文本消息的方法
         """
@@ -134,7 +134,7 @@ class MessageMixin(WechatAPIClientBase):
             raise ValueError("Argument 'at' should be str or list")
 
         async with aiohttp.ClientSession() as session:
-            json_param = {"Wxid": self.wxid, "ToWxid": wxid, "Content": content, "Type": 1, "At": at_str}
+            json_param = {"Wxid": self.wxid, "ToWxid": wxid, "Content": content, "Type": type, "At": at_str}
             response = await session.post(f'http://{self.ip}:{self.port}/SendTextMsg', json=json_param)
             json_resp = await response.json()
             if json_resp.get("Success"):

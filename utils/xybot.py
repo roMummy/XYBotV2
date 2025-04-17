@@ -43,7 +43,7 @@ class XYBot:
         """处理接收到的消息"""
 
         # 数据库消息数+1先
-        await self.key_db.set("messages", str(int(await self.key_db.get("messages")) + 1))
+        await self.key_db.set("messages", str(int(await self.key_db.get("messages") or 0) + 1))
 
         msg_type = message.get("MsgType")
 
@@ -82,6 +82,9 @@ class XYBot:
                 await EventManager.emit("friend_request", self.bot, message)
             else:
                 logger.warning("风控保护: 新设备登录后4小时内请挂机")
+        
+        elif msg_type == 48: # 地图消息
+            await self.process_xml_message(message)
 
         elif msg_type == 51:
             pass
@@ -127,17 +130,17 @@ class XYBot:
 
         # 保存消息到数据库
         await self.msg_db.save_message(
-            msg_id=int(message["MsgId"]),
+            msg_id=int(message["NewMsgId"]),
             sender_wxid=message["SenderWxid"],
             from_wxid=message["FromWxid"],
             msg_type=int(message["MsgType"]),
             content=message["Content"],
             is_group=message["IsGroup"]
         )
-
+        logger.info("保存文本消息: {}",message)
         if self.wxid in ats:
             logger.info("收到被@消息: 消息ID:{} 来自:{} 发送人:{} @:{} 内容:{}",
-                        message["MsgId"],
+                        message["NewMsgId"],
                         message["FromWxid"],
                         message["SenderWxid"],
                         message["Ats"],
@@ -151,7 +154,7 @@ class XYBot:
             return
 
         logger.info("收到文本消息: 消息ID:{} 来自:{} 发送人:{} @:{} 内容:{}",
-                    message["MsgId"],
+                    message["NewMsgId"],
                     message["FromWxid"],
                     message["SenderWxid"],
                     message["Ats"],
@@ -184,17 +187,17 @@ class XYBot:
             message["IsGroup"] = False
 
         logger.info("收到图片消息: 消息ID:{} 来自:{} 发送人:{} XML:{}",
-                    message["MsgId"],
+                    message["NewMsgId"],
                     message["FromWxid"],
                     message["SenderWxid"],
                     message["Content"])
 
         await self.msg_db.save_message(
-            msg_id=int(message["MsgId"]),
+            msg_id=int(message["NewMsgId"]),
             sender_wxid=message["SenderWxid"],
             from_wxid=message["FromWxid"],
             msg_type=int(message["MsgType"]),
-            content=message["MsgSource"],
+            content=message["Content"],
             is_group=message["IsGroup"]
         )
 
@@ -241,13 +244,13 @@ class XYBot:
             message["IsGroup"] = False
 
         logger.info("收到语音消息: 消息ID:{} 来自:{} 发送人:{} XML:{}",
-                    message["MsgId"],
+                    message["NewMsgId"],
                     message["FromWxid"],
                     message["SenderWxid"],
                     message["Content"])
 
         await self.msg_db.save_message(
-            msg_id=int(message["MsgId"]),
+            msg_id=int(message["NewMsgId"]),
             sender_wxid=message["SenderWxid"],
             from_wxid=message["FromWxid"],
             msg_type=int(message["MsgType"]),
@@ -270,7 +273,7 @@ class XYBot:
 
             # 下载语音
             if voiceurl and length:
-                silk_base64 = await self.bot.download_voice(message["MsgId"], voiceurl, length)
+                silk_base64 = await self.bot.download_voice(message["NewMsgId"], voiceurl, length)
                 message["Content"] = await self.bot.silk_base64_to_wav_byte(silk_base64)
         else:
             silk_base64 = message["ImgBuf"]["buffer"]
@@ -302,7 +305,7 @@ class XYBot:
             message["IsGroup"] = False
 
         await self.msg_db.save_message(
-            msg_id=int(message["MsgId"]),
+            msg_id=int(message["NewMsgId"]),
             sender_wxid=message["SenderWxid"],
             from_wxid=message["FromWxid"],
             msg_type=int(message["MsgType"]),
@@ -310,6 +313,7 @@ class XYBot:
             is_group=message["IsGroup"]
         )
 
+        logger.info("保存xml消息: {}",message)
         try:
             root = ET.fromstring(message["Content"])
             type = int(root.find("appmsg").find("type").text)
@@ -329,6 +333,7 @@ class XYBot:
 
     async def process_quote_message(self, message: Dict[str, Any]):
         """处理引用消息"""
+        logger.info("处理引用消息: {}",message)
         quote_messsage = {}
         try:
             root = ET.fromstring(message["Content"])
@@ -337,25 +342,40 @@ class XYBot:
             refermsg = appmsg.find("refermsg")
 
             quote_messsage["MsgType"] = int(refermsg.find("type").text)
+            quote_messsage["NewMsgId"] = refermsg.find("svrid").text
+            quote_messsage["ToWxid"] = refermsg.find("fromusr").text
+            quote_messsage["FromWxid"] = refermsg.find("chatusr").text
+            quote_messsage["Nickname"] = refermsg.find("displayname").text
+            quote_messsage["MsgSource"] = refermsg.find("msgsource").text
+            quote_messsage["Content"] = refermsg.find("content").text
+            quote_messsage["Createtime"] = refermsg.find("createtime").text
+            # if quote_messsage["MsgType"] == 1:  # 文本消息
+            #     quote_messsage["NewMsgId"] = refermsg.find("svrid").text
+            #     quote_messsage["ToWxid"] = refermsg.find("fromusr").text
+            #     quote_messsage["FromWxid"] = refermsg.find("chatusr").text
+            #     quote_messsage["Nickname"] = refermsg.find("displayname").text
+            #     quote_messsage["MsgSource"] = refermsg.find("msgsource").text
+            #     quote_messsage["Content"] = refermsg.find("content").text
+            #     quote_messsage["Createtime"] = refermsg.find("createtime").text
 
-            if quote_messsage["MsgType"] == 1:  # 文本消息
-                quote_messsage["NewMsgId"] = refermsg.find("svrid").text
-                quote_messsage["ToWxid"] = refermsg.find("fromusr").text
-                quote_messsage["FromWxid"] = refermsg.find("chatusr").text
-                quote_messsage["Nickname"] = refermsg.find("displayname").text
-                quote_messsage["MsgSource"] = refermsg.find("msgsource").text
-                quote_messsage["Content"] = refermsg.find("content").text
-                quote_messsage["Createtime"] = refermsg.find("createtime").text
+            # elif quote_messsage["MsgType"] in [48, 3]:  # 地图消息, 图片消息
+            #     quote_messsage["NewMsgId"] = refermsg.find("svrid").text
+            #     quote_messsage["ToWxid"] = refermsg.find("fromusr").text
+            #     quote_messsage["FromWxid"] = refermsg.find("chatusr").text
+            #     quote_messsage["Nickname"] = refermsg.find("displayname").text
+            #     quote_messsage["Content"] = refermsg.find("content").text
+            #     quote_messsage["Createtime"] = refermsg.find("createtime").text
+            #     quote_messsage["MsgSource"] = refermsg.find("msgsource").text
 
-            elif quote_messsage["MsgType"] == 49:  # 引用消息
-                quote_messsage["NewMsgId"] = refermsg.find("svrid").text
-                quote_messsage["ToWxid"] = refermsg.find("fromusr").text
-                quote_messsage["FromWxid"] = refermsg.find("chatusr").text
-                quote_messsage["Nickname"] = refermsg.find("displayname").text
-                quote_messsage["MsgSource"] = refermsg.find("msgsource").text
-                quote_messsage["Createtime"] = refermsg.find("createtime").text
+            if quote_messsage["MsgType"] == 49 :  # 引用消息
+                # quote_messsage["NewMsgId"] = refermsg.find("svrid").text
+                # quote_messsage["ToWxid"] = refermsg.find("fromusr").text
+                # quote_messsage["FromWxid"] = refermsg.find("chatusr").text
+                # quote_messsage["Nickname"] = refermsg.find("displayname").text
+                # quote_messsage["MsgSource"] = refermsg.find("msgsource").text
+                # quote_messsage["Createtime"] = refermsg.find("createtime").text
 
-                quote_messsage["Content"] = refermsg.find("content").text
+                # quote_messsage["Content"] = refermsg.find("content").text
 
                 quote_root = ET.fromstring(quote_messsage["Content"])
                 quote_appmsg = quote_root.find("appmsg")
@@ -421,7 +441,7 @@ class XYBot:
         message["Quote"] = quote_messsage
 
         logger.info("收到引用消息: 消息ID:{} 来自:{} 发送人:{}  内容:{} 引用:{}",
-                    message.get("Msgid", ""),
+                    message.get("NewMsgId", ""),
                     message["FromWxid"],
                     message["SenderWxid"],
                     message["Content"],
@@ -453,13 +473,13 @@ class XYBot:
             message["IsGroup"] = False
 
         logger.info("收到视频消息: 消息ID:{} 来自:{} 发送人:{} XML:{}",
-                    message["MsgId"],
+                    message["NewMsgId"],
                     message["FromWxid"],
                     message["SenderWxid"],
                     str(message["Content"]).replace("\n", ""))
 
         await self.msg_db.save_message(
-            msg_id=int(message["MsgId"]),
+            msg_id=int(message["NewMsgId"]),
             sender_wxid=message["SenderWxid"],
             from_wxid=message["FromWxid"],
             msg_type=int(message["MsgType"]),
@@ -467,7 +487,7 @@ class XYBot:
             is_group=message["IsGroup"]
         )
 
-        message["Video"] = await self.bot.download_video(message["MsgId"])
+        message["Video"] = await self.bot.download_video(message["NewMsgId"])
 
         if self.ignore_check(message["FromWxid"], message["SenderWxid"]):
             if self.ignore_protection or not protector.check(14400):
@@ -490,13 +510,13 @@ class XYBot:
         message["FileExtend"] = file_extend
 
         logger.info("收到文件消息: 消息ID:{} 来自:{} 发送人:{} XML:{}",
-                    message["MsgId"],
+                    message["NewMsgId"],
                     message["FromWxid"],
                     message["SenderWxid"],
                     message["Content"])
 
         await self.msg_db.save_message(
-            msg_id=int(message["MsgId"]),
+            msg_id=int(message["NewMsgId"]),
             sender_wxid=message["SenderWxid"],
             from_wxid=message["FromWxid"],
             msg_type=int(message["MsgType"]),
@@ -568,7 +588,7 @@ class XYBot:
         message["PatSuffix"] = pat_suffix
 
         logger.info("收到拍一拍消息: 消息ID:{} 来自:{} 发送人:{} 拍者:{} 被拍:{} 后缀:{}",
-                    message["MsgId"],
+                    message["NewMsgId"],
                     message["FromWxid"],
                     message["SenderWxid"],
                     message["Patter"],
@@ -576,7 +596,7 @@ class XYBot:
                     message["PatSuffix"])
 
         await self.msg_db.save_message(
-            msg_id=int(message["MsgId"]),
+            msg_id=int(message["NewMsgId"]),
             sender_wxid=message["SenderWxid"],
             from_wxid=message["FromWxid"],
             msg_type=int(message["MsgType"]),

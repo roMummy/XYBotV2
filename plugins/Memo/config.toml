@@ -1,0 +1,6 @@
+[Memo]
+enable = true
+command_set = ["记录", "标记", "保存"]
+command_get = ["查询", "查看"]
+command_list = ["列表", "所有记录"]
+command_delete = ["删除", "移除"]

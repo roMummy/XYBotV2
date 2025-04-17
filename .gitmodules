@@ -1,0 +1,3 @@
+[submodule "plugins/GoodMorning"]
+	path = plugins/GoodMorning
+	url = git@gitee.com:tianwen520/GoodMorning.git

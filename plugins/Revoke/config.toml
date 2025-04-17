@@ -1,0 +1,4 @@
+[Revoke]
+enable = true
+command = ["撤回"]
+admins = ["wxid_1s8pwoa9rl6f21", "wxid_vqkeovas303o22"]

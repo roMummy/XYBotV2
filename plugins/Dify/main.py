@@ -2,6 +2,7 @@ import json
 import re
 import tomllib
 import traceback
+import xml.etree.ElementTree as ET
 
 import aiohttp
 import filetype
@@ -32,9 +33,13 @@ class Dify(PluginBase):
 
         with open("plugins/Dify/config.toml", "rb") as f:
             config = tomllib.load(f)
+        
+        with open("resource/robot_stat.json", "r") as f:
+            robot_stat = json.load(f)
 
         plugin_config = config["Dify"]
 
+        self.wxid = robot_stat.get("wxid", None)
         self.enable = plugin_config["enable"]
         self.api_key = plugin_config["api-key"]
         self.base_url = plugin_config["base-url"]
@@ -69,6 +74,23 @@ class Dify(PluginBase):
 
         if await self._check_point(bot, message):
             await self.dify(bot, message, message["Content"])
+
+
+        try:
+            root = ET.fromstring(message["MsgSource"])
+            ats = root.find("atuserlist").text if root.find("atuserlist") is not None else ""
+        except Exception as e:
+            logger.error("解析文本消息失败: {}", e)
+            return
+
+        if ats:
+            ats = ats.strip(",").split(",")
+        else:  # 修复
+            ats = []
+
+        if self.wxid in ats:
+            await self.dify(bot, message, message["Content"])
+
         return False
 
     @on_at_message(priority=20)
@@ -210,7 +232,7 @@ class Dify(PluginBase):
             "auto_generate_name": False,
         })
         url = f"{self.base_url}/chat-messages"
-
+        
         ai_resp = ""
         async with aiohttp.ClientSession(proxy=self.http_proxy) as session:
             async with session.post(url=url, headers=headers, data=payload) as resp:
