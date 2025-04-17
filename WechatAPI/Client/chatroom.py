@@ -164,11 +164,6 @@ class ChatroomMixin(WechatAPIClientBase):
         Returns:
             dict: 群聊名称和备注
         """
-
-        return {
-            "room_name": "111",
-            "room_remark": "111"
-        }
         group_info = await self.get_chatroom_info(chatroom)
         room_name = group_info.get("NickName").get("string")
         room_remark = group_info.get("Remark").get("string")
