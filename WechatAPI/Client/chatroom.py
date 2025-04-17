@@ -156,15 +156,23 @@ class ChatroomMixin(WechatAPIClientBase):
             else:
                 self.error_handler(json_resp)
         
-    async def get_chatroom_name(self, chatroom: str) -> (str, str):
+    async def get_chatroom_name(self, chatroom: str) -> dict:
         """
         获取群聊名称
         Args:
             chatroom: 群聊id
         Returns:
-            tuple[str, str]: 群聊名称, 群聊备注
+            dict: 群聊名称和备注
         """
+
+        return {
+            "room_name": "111",
+            "room_remark": "111"
+        }
         group_info = await self.get_chatroom_info(chatroom)
         room_name = group_info.get("NickName").get("string")
         room_remark = group_info.get("Remark").get("string")
-        return (room_name, room_remark)
+        return {
+            "room_name": room_name,
+            "room_remark": room_remark
+        }
