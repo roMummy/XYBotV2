@@ -171,3 +171,32 @@ class ChatroomMixin(WechatAPIClientBase):
             "room_name": room_name,
             "room_remark": room_remark
         }
+    
+    async def get_chatroom_nickname(self, chatroom: str) -> str:
+        """
+        获取群聊名称
+        Args:
+            chatroom: 群聊id
+        Returns:
+            str: 群聊名称
+        """
+
+        group_info = await self.get_chatroom_info(chatroom)
+        room_name = group_info.get("NickName").get("string")
+
+        return str(room_name)
+
+    async def get_chatroom_remark_name(self, chatroom: str) -> str:
+        """
+        获取群聊备注
+        Args:
+            chatroom: 群聊id
+        Returns:
+            dict: 群聊备注
+        """
+
+        group_info = await self.get_chatroom_info(chatroom)
+        room_remark = group_info.get("Remark").get("string")
+
+        return str(room_remark)
+
