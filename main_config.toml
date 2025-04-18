@@ -18,6 +18,7 @@ keyvalDB-url = "sqlite+aiosqlite:///database/keyval.db"
 
 # 管理员设置
 admins = ["wxid_1s8pwoa9rl6f21", "wxid_vqkeovas303o22"]  # 管理员的wxid列表，可从消息日志中获取
+managers = ["wxid_1s8pwoa9rl6f21", "wxid_vqkeovas303o22"]
 disabled-plugins = ["ExamplePlugin", "TencentLke", "DailyBot"]   # 禁用的插件列表，不需要的插件名称填在这里
 timezone = "Asia/Shanghai"             # 时区设置，中国用户使用 Asia/Shanghai
 
