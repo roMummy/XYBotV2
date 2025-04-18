@@ -200,3 +200,21 @@ class ChatroomMixin(WechatAPIClientBase):
 
         return str(room_remark)
 
+    async def get_chatroom_user_name(self, chatroom: str, user_id:str) -> str:
+        """
+        获取群聊用户名
+        Args:
+            chatroom: 群聊id
+            user_id: 用户id
+        Returns:
+            str: 群聊用户名
+        """
+        group_info = await self.get_chatroom_member_list(chatroom)
+
+        for user in group_info:
+            if user.get("UserName") == user_id:
+                display_name = user.get("DisplayName")
+                nick_name = user.get("NickName")
+                return display_name if display_name else nick_name
+            
+        return None
