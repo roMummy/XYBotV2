@@ -154,35 +154,4 @@ class FriendMixin(WechatAPIClientBase):
                 except:
                     result.append("")
             return result
-
-    async def get_user_remark(self, wxid: Union[str, list[str]]) -> Union[str, list[str]]:
-        """
-        获取用户备注名称 如果没有返回用户昵称
-
-        Args:
-            wxid: 用户wxid，可以是单个wxid或最多20个wxid的列表
-
-        Returns:
-            Union[str, list[str]]: 如果输入单个wxid返回str，如果输入wxid列表则返回对应的昵称列表
-        """
-
-        data = await self.get_contract_detail(wxid)
-
-        if isinstance(wxid, str):
-            try:
-                remark = data[0].get("Remark").get("string")
-                nickname = data[0].get("NickName").get("string")
-                return remark if remark else nickname
-            except:
-                return ""
-        else:
-            result = []
-            for contact in data:
-                try:
-                    remark = data[0].get("Remark").get("string")
-                    nickname = data[0].get("NickName").get("string")
-                    name = remark if remark else nickname
-                    result.append(name)
-                except:
-                    result.append("")
-            return result
+            
