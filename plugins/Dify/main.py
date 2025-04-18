@@ -97,6 +97,10 @@ class Dify(PluginBase):
     async def handle_at(self, bot: WechatAPIClient, message: dict):
         if not self.enable:
             return
+        # @所有人不处理
+        content = message["Content"]
+        if "@所有人" in content:
+            return
 
         if not self.api_key:
             await bot.send_at_message(message["FromWxid"], "\n你还没配置Dify API密钥！", [message["SenderWxid"]])

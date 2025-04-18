@@ -1,8 +1,8 @@
 [Dify]
 enable = true
 
-api-key = "" # Dify的API Key
-base-url = "https://api.dify.ai/v1" #Dify API接口base url
+api-key = "app-VtIehLrk96WoFyvRnOXPrl3a" # Dify的API Key
+base-url = "http://192.168.1.112/v1" #Dify API接口base url
 
 commands = ["ai", "dify", "聊天", "AI"]
 command-tip = """-----XYBot-----
