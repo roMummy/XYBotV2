@@ -1,3 +1,6 @@
 [submodule "plugins/GoodMorning"]
 	path = plugins/GoodMorning
 	url = git@github.com:roMummy/GoodMorning.git
+[submodule "plugins/Dify"]
+	path = plugins/Dify
+	url = git@github.com:roMummy/Dify.git
