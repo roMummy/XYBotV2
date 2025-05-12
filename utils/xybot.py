@@ -1,3 +1,5 @@
+import html
+import re
 import tomllib
 import xml.etree.ElementTree as ET
 from typing import Dict, Any
@@ -376,8 +378,21 @@ class XYBot:
                 # quote_messsage["Createtime"] = refermsg.find("createtime").text
 
                 # quote_messsage["Content"] = refermsg.find("content").text
+                
+                # 先转义 小程序的应用消息没有转义
+                xml_start = quote_messsage["Content"].find('<?xml')    
+                xml_content = ""           
+                if xml_start != -1:
+                    unescaped_xml = html.unescape(quote_messsage["Content"])
+                    # 把开头的微信id移除掉
+                    xml_content = re.sub(r'^[^:]+:', '', unescaped_xml, count=1)
+                    # 替换所有不合法的 &（即不属于实体，比如 &amp; 之外的）
+                    xml_content = re.sub(r'&(?!amp;|lt;|gt;|apos;|quot;)', '&amp;', xml_content)
+                else:
+                    xml_content = quote_messsage["Content"]
+                logger.info(f"xml_content -> {xml_content}")
 
-                quote_root = ET.fromstring(quote_messsage["Content"])
+                quote_root = ET.fromstring(xml_content)
                 quote_appmsg = quote_root.find("appmsg")
 
                 quote_messsage["Content"] = quote_appmsg.find("title").text if isinstance(quote_appmsg.find("title"),
