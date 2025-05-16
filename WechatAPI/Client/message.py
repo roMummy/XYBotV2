@@ -97,7 +97,7 @@ class MessageMixin(WechatAPIClientBase):
             else:
                 self.error_handler(json_resp)
 
-    async def send_text_message(self, wxid: str, content: str, type: int = 1, at: Union[list, str] = "") -> tuple[int, int, int]:
+    async def send_text_message(self, wxid: str, content: str, at: Union[list, str] = "", type: int = 1) -> tuple[int, int, int]:
         """发送文本消息。
 
         Args:
@@ -115,7 +115,7 @@ class MessageMixin(WechatAPIClientBase):
         """
         return await self._queue_message(self._send_text_message, wxid, content, type, at)
 
-    async def _send_text_message(self, wxid: str, content: str, type: int, at: list[str] = None) -> tuple[int, int, int]:
+    async def _send_text_message(self, wxid: str, content: str, at: list[str] = None, type: int = 1) -> tuple[int, int, int]:
         """
         实际发送文本消息的方法
         """

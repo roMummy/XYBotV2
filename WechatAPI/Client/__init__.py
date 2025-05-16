@@ -46,4 +46,4 @@ class WechatAPIClient(LoginMixin, MessageMixin, FriendMixin, ChatroomMixin, User
 
         output += content
 
-        return await self.send_text_message(wxid, output, at = at)
+        return await self.send_text_message(wxid, output, at)
